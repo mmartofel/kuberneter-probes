@@ -8,7 +8,7 @@ spec:
     namespace: probes
     server: 'https://kubernetes.default.svc'
   source:
-    path: ocp-argo-files/store
-    repoURL: 'https://github.com/mmartofel/fake-transactions-deployment.git'
+    path: deployment/store
+    repoURL: 'https://github.com/mmartofel/kuberneter-probes'
     targetRevision: HEAD
-  project: fake-transactions
+  project: no-kubernetes-probes

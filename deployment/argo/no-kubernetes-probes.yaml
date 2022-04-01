@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: no-kubernetes-probes
+  namespace: openshift-gitops
+spec:
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  description: Project to host microservices with no probes
+  destinations:
+    - name: '*'
+      namespace: probes
+      server: '*'
+  sourceRepos:
+    - '*'
+status: {}
