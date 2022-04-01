@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: store
+spec:
+  destination:
+    name: 'Postgres database to support CRUD service'
+    namespace: probes
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: ocp-argo-files/store
+    repoURL: 'https://github.com/mmartofel/fake-transactions-deployment.git'
+    targetRevision: HEAD
+  project: fake-transactions

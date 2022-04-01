@@ -1,0 +1,6 @@
+resources:
+- configmap-postgress.yaml
+- configmap-orm.yaml
+- deployment.yaml
+- service.yaml
+- route.yaml

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    app.openshift.io/connects-to: 'store'
+    app.openshift.io/vcs-uri: 'https://github.com/mmartofel/probes.git'
+  labels:
+    app: probes
+    app.kubernetes.io/component: probes
+    app.kubernetes.io/instance: probes
+    app.kubernetes.io/part-of: QUARKUS_API_SERVICE
+    app.openshift.io/runtime: quarkus
+  name: probes
+spec:
+  selector:
+    matchLabels:
+      deployment: probes
+  template:
+    metadata:
+     labels:
+      deployment: probes
+    spec:
+      containers:
+      - env:
+        - name: DBUSER
+          valueFrom:
+            configMapKeyRef:
+              key: DBUSER
+              name: postgres-configmap
+        - name: DBCONNECT
+          valueFrom:
+            configMapKeyRef:
+              key: DBCONNECT
+              name: postgres-configmap
+        - name: DBPASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: DBPASSWORD
+              name: postgres-configmap
+        envFrom:
+          - configMapRef:
+              name: orm-configmap
+          - configMapRef:
+              name: flyway-configmap
+        image: image-registry.openshift-image-registry.svc:5000/probes/probes:2.0
+        imagePullPolicy: Always
+        name: probes
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        - containerPort: 8778
+          protocol: TCP
+        resources: {}
