@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   annotations:
     app.openshift.io/connects-to: 'store'
-    app.openshift.io/vcs-uri: 'https://github.com/mmartofel/probes.git'
+    app.openshift.io/vcs-uri: 'https://github.com/mmartofel/kuberneter-probes.git'
   labels:
     app: probes
     app.kubernetes.io/component: probes

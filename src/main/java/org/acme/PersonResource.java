@@ -10,6 +10,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.flywaydb.core.Flyway;
+
 import io.quarkus.logging.Log;
 
 import java.util.List;
@@ -18,7 +20,7 @@ import java.util.List;
 public class PersonResource {
 
     @Inject
-    MigrationService ms;
+    Flyway flyway;
 
     @GET
     @Path("person/all")
@@ -38,6 +40,4 @@ public class PersonResource {
         Log.info("External call to REST point: /api/person/add new object added : " + dummyData.name + " " + dummyData.surname + " " + dummyData.pesel);
         return Response.status(Status.CREATED).entity(dummyData).build();
     }
-
-    
 }
