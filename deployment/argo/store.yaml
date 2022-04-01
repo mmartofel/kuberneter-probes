@@ -4,7 +4,7 @@ metadata:
   name: store
 spec:
   destination:
-    name: 'Postgres database to support CRUD service'
+    name: ''
     namespace: probes
     server: 'https://kubernetes.default.svc'
   source:
