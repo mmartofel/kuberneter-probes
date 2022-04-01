@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: probes
+spec:
+  destination:
+    name: ''
+    namespace: probes
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: deployment/probes
+    repoURL: 'https://github.com/mmartofel/kuberneter-probes'
+    targetRevision: HEAD
+  project: no-kubernetes-probes
