@@ -42,7 +42,7 @@ spec:
               name: orm-configmap
           - configMapRef:
               name: flyway-configmap
-        image: image-registry.openshift-image-registry.svc:5000/probes/probes:2.0
+        image: image-registry.openshift-image-registry.svc:5000/project01/probes:main
         imagePullPolicy: Always
         name: probes
         ports:
