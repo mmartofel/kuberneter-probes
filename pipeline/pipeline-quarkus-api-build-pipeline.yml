@@ -3,9 +3,11 @@ kind: Pipeline
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: >
-      {"apiVersion":"tekton.dev/v1beta1","kind":"Pipeline","metadata":{"annotations":{},"managedFields":[{"apiVersion":"tekton.dev/v1beta1","fieldsType":"FieldsV1","fieldsV1":{"f:spec":{".":{},"f:finally":{},"f:params":{},"f:resources":{},"f:tasks":{},"f:workspaces":{}}}}],"name":"quarkus-api-build-pipeline","namespace":"project01"},"spec":{"params":[{"default":"https://github.com/mmartofel/kuberneter-probes","description":"Git
+      {"apiVersion":"tekton.dev/v1beta1","kind":"Pipeline","metadata":{"annotations":{},"managedFields":[{"apiVersion":"tekton.dev/v1beta1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:annotations":{".":{},"f:kubectl.kubernetes.io/last-applied-configuration":{}}},"f:spec":{".":{},"f:params":{}}},"manager":"kubectl-client-side-apply","operation":"Update","time":"2022-04-05T13:42:48Z"},{"apiVersion":"tekton.dev/v1beta1","fieldsType":"FieldsV1","fieldsV1":{"f:spec":{"f:finally":{},"f:resources":{},"f:tasks":{},"f:workspaces":{}}}}],"name":"quarkus-api-build-pipeline","namespace":"project01"},"spec":{"params":[{"default":"https://github.com/mmartofel/kuberneter-probes","description":"Git
       repo to clone code
       from","name":"git-url","type":"string"}],"tasks":[{"name":"git-clone","params":[{"name":"url","value":"$(params.git-url)"},{"name":"submodules","value":"true"},{"name":"depth","value":"1"},{"name":"sslVerify","value":"true"},{"name":"deleteExisting","value":"true"},{"name":"verbose","value":"true"},{"name":"gitInitImage","value":"registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b1598a980f17d5f5d3d8a4b11ab4f5184677f7f17ad302baa36bd3c1"},{"name":"userHome","value":"/tekton/home"}],"taskRef":{"kind":"ClusterTask","name":"git-clone"},"workspaces":[{"name":"output","workspace":"default"}]},{"name":"maven-build-skiptests","params":[{"name":"MAVEN_IMAGE","value":"gcr.io/cloud-builders/mvn"},{"name":"GOALS","value":["package","-D=skipTests"]},{"name":"PROXY_PROTOCOL","value":"http"},{"name":"CONTEXT_DIR","value":"."}],"runAfter":["git-clone"],"taskRef":{"kind":"ClusterTask","name":"maven"},"workspaces":[{"name":"source","workspace":"default"},{"name":"maven-settings","workspace":"default"}]},{"name":"buildah","params":[{"name":"IMAGE","value":"quay.io/repository/mmartofe/probes"},{"name":"BUILDER_IMAGE","value":"registry.redhat.io/rhel8/buildah@sha256:e19cf23d5f1e0608f5a897f0a50448beb9f8387031cca49c7487ec71bd91c4d3"},{"name":"STORAGE_DRIVER","value":"vfs"},{"name":"DOCKERFILE","value":"./src/main/docker/Dockerfile.jvm"},{"name":"CONTEXT","value":"."},{"name":"TLSVERIFY","value":"true"},{"name":"FORMAT","value":"oci"}],"runAfter":["maven-build-skiptests"],"taskRef":{"kind":"ClusterTask","name":"buildah"},"workspaces":[{"name":"source","workspace":"default"}]}],"workspaces":[{"name":"default"}]}}
+  creationTimestamp: '2022-04-05T13:42:48Z'
+  generation: 80
   managedFields:
     - apiVersion: tekton.dev/v1beta1
       fieldsType: FieldsV1
@@ -14,33 +16,77 @@ metadata:
           'f:annotations':
             .: {}
             'f:kubectl.kubernetes.io/last-applied-configuration': {}
-        'f:spec':
-          .: {}
-          'f:params': {}
+        'f:spec': {}
       manager: kubectl-client-side-apply
       operation: Update
-      time: '2022-04-05T13:42:48Z'
+      time: '2022-04-05T16:38:42Z'
     - apiVersion: tekton.dev/v1beta1
       fieldsType: FieldsV1
       fieldsV1:
         'f:spec':
           'f:finally': {}
+          'f:params': {}
           'f:resources': {}
           'f:tasks': {}
           'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2022-04-05T17:20:47Z'
   name: quarkus-api-build-pipeline
   namespace: project01
+  resourceVersion: '3411079'
+  uid: f6ec0a78-c969-45e9-a464-97d8f6656610
 spec:
+  finally:
+    - name: deploy-probes-api
+      params:
+        - name: SCRIPT
+          value: >-
+            oc new-app $(params.api-image-destination):$(params.api-git-branch)
+            ; oc set env deployment/probes --from configmap/flyway-configmap ;
+            oc set env deployment/probes --from configmap/orm-configmap ; oc set
+            env deployment/probes --from configmap/postgres-configmap ; oc
+            expose service/probes
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
   params:
     - default: 'https://github.com/mmartofel/kuberneter-probes'
-      description: Git repo to clone code from
-      name: git-url
+      description: Git repo to clone code from to build API
+      name: api-git-url
+      type: string
+    - default: main
+      description: Git branch to build API from
+      name: api-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/probes'
+      description: Destination for API image to store
+      name: api-image-destination
+      type: string
+    - default: 'https://github.com/mmartofel/kuberneter-probes-frontend'
+      description: Git repo to clone code from to build Frontend
+      name: frontend-git-url
+      type: string
+    - default: main
+      description: Git branch to build Frontend from
+      name: frontend-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/frontend'
+      description: Destination for Frontend image to store
+      name: frontend-image-destination
       type: string
   tasks:
-    - name: git-clone
+    - name: git-clone-api
       params:
         - name: url
-          value: $(params.git-url)
+          value: $(params.api-git-url)
         - name: submodules
           value: 'true'
         - name: depth
@@ -56,6 +102,10 @@ spec:
             registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b1598a980f17d5f5d3d8a4b11ab4f5184677f7f17ad302baa36bd3c1
         - name: userHome
           value: /tekton/home
+        - name: revision
+          value: $(params.api-git-branch)
+      runAfter:
+        - cleanup
       taskRef:
         kind: ClusterTask
         name: git-clone
@@ -75,7 +125,7 @@ spec:
         - name: CONTEXT_DIR
           value: .
       runAfter:
-        - git-clone
+        - git-clone-api
       taskRef:
         kind: ClusterTask
         name: maven
@@ -84,21 +134,21 @@ spec:
           workspace: default
         - name: maven-settings
           workspace: default
-    - name: buildah
+    - name: buildah-api
       params:
         - name: IMAGE
-          value: quay.io/repository/mmartofe/probes
+          value: '$(params.api-image-destination):$(params.api-git-branch)'
         - name: BUILDER_IMAGE
           value: >-
             registry.redhat.io/rhel8/buildah@sha256:e19cf23d5f1e0608f5a897f0a50448beb9f8387031cca49c7487ec71bd91c4d3
         - name: STORAGE_DRIVER
           value: vfs
         - name: DOCKERFILE
-          value: ./src/main/docker/Dockerfile.jvm
+          value: ./src/main/docker/Dockerfile.jvm.ocp
         - name: CONTEXT
           value: .
         - name: TLSVERIFY
-          value: 'true'
+          value: 'false'
         - name: FORMAT
           value: oci
       runAfter:
@@ -109,5 +159,175 @@ spec:
       workspaces:
         - name: source
           workspace: default
+    - name: deployment-postgres
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/store/deployment.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - configmap-postgres-setup
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-postgres-setup
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/manifest-dir/deployment/store/configmap.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - git-clone-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: service-postgres
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig-dir/deployment/store/service.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - configmap-postgres-setup
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-postgres
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-postgress.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-flyway
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-flyway.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-orm
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-orm.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: cleanup
+      params:
+        - name: SCRIPT
+          value: >-
+            oc delete all --selector app=store -n project01 ; oc delete all
+            --selector app=probes -n project01
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: git-clone-frontend
+      params:
+        - name: url
+          value: $(params.frontend-git-url)
+        - name: revision
+          value: $(params.frontend-git-branch)
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b1598a980f17d5f5d3d8a4b11ab4f5184677f7f17ad302baa36bd3c1
+        - name: userHome
+          value: /tekton/home
+      runAfter:
+        - cleanup
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: frontend
+    - name: buildah-frontend
+      params:
+        - name: IMAGE
+          value: '$(params.frontend-image-destination):$(params.frontend-git-branch)'
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:e19cf23d5f1e0608f5a897f0a50448beb9f8387031cca49c7487ec71bd91c4d3
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'false'
+        - name: FORMAT
+          value: oci
+      runAfter:
+        - git-clone-frontend
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: frontend
   workspaces:
     - name: default
+    - name: frontend

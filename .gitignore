@@ -1,3 +1,6 @@
+# Frontend directory belongs to separate repo
+frontend
+
 #Maven
 target/
 pom.xml.tag
