@@ -7,7 +7,7 @@ metadata:
       repo to clone code
       from","name":"git-url","type":"string"}],"tasks":[{"name":"git-clone","params":[{"name":"url","value":"$(params.git-url)"},{"name":"submodules","value":"true"},{"name":"depth","value":"1"},{"name":"sslVerify","value":"true"},{"name":"deleteExisting","value":"true"},{"name":"verbose","value":"true"},{"name":"gitInitImage","value":"registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b1598a980f17d5f5d3d8a4b11ab4f5184677f7f17ad302baa36bd3c1"},{"name":"userHome","value":"/tekton/home"}],"taskRef":{"kind":"ClusterTask","name":"git-clone"},"workspaces":[{"name":"output","workspace":"default"}]},{"name":"maven-build-skiptests","params":[{"name":"MAVEN_IMAGE","value":"gcr.io/cloud-builders/mvn"},{"name":"GOALS","value":["package","-D=skipTests"]},{"name":"PROXY_PROTOCOL","value":"http"},{"name":"CONTEXT_DIR","value":"."}],"runAfter":["git-clone"],"taskRef":{"kind":"ClusterTask","name":"maven"},"workspaces":[{"name":"source","workspace":"default"},{"name":"maven-settings","workspace":"default"}]},{"name":"buildah","params":[{"name":"IMAGE","value":"quay.io/repository/mmartofe/probes"},{"name":"BUILDER_IMAGE","value":"registry.redhat.io/rhel8/buildah@sha256:e19cf23d5f1e0608f5a897f0a50448beb9f8387031cca49c7487ec71bd91c4d3"},{"name":"STORAGE_DRIVER","value":"vfs"},{"name":"DOCKERFILE","value":"./src/main/docker/Dockerfile.jvm"},{"name":"CONTEXT","value":"."},{"name":"TLSVERIFY","value":"true"},{"name":"FORMAT","value":"oci"}],"runAfter":["maven-build-skiptests"],"taskRef":{"kind":"ClusterTask","name":"buildah"},"workspaces":[{"name":"source","workspace":"default"}]}],"workspaces":[{"name":"default"}]}}
   creationTimestamp: '2022-04-05T13:42:48Z'
-  generation: 80
+  generation: 90
   managedFields:
     - apiVersion: tekton.dev/v1beta1
       fieldsType: FieldsV1
@@ -34,7 +34,7 @@ metadata:
       time: '2022-04-05T17:20:47Z'
   name: quarkus-api-build-pipeline
   namespace: project01
-  resourceVersion: '3411079'
+  resourceVersion: '3604693'
   uid: f6ec0a78-c969-45e9-a464-97d8f6656610
 spec:
   finally:
@@ -46,7 +46,9 @@ spec:
             ; oc set env deployment/probes --from configmap/flyway-configmap ;
             oc set env deployment/probes --from configmap/orm-configmap ; oc set
             env deployment/probes --from configmap/postgres-configmap ; oc
-            expose service/probes
+            expose service/probes ; oc label deployment/probes
+            app.kubernetes.io/part-of=QUARKUS_API --overwrite ; oc label
+            deployment/probes app.openshift.io/runtime=quarkus --overwrite
         - name: VERSION
           value: latest
       taskRef:
@@ -57,6 +59,26 @@ spec:
           workspace: default
         - name: kubeconfig-dir
           workspace: default
+    - name: deploy-frontend
+      params:
+        - name: SCRIPT
+          value: >-
+            oc new-app
+            $(params.frontend-image-destination):$(params.frontend-git-branch) ;
+            oc expose svc/frontend ; oc label deployment/frontend
+            app.openshift.io/runtime=angularjs --overwrite ; oc label
+            deployment/frontend app.kubernetes.io/part-of=ANGULAR_DEMO_APP
+            --overwrite
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: frontend
+        - name: kubeconfig-dir
+          workspace: frontend
   params:
     - default: 'https://github.com/mmartofel/kuberneter-probes'
       description: Git repo to clone code from to build API
@@ -268,7 +290,8 @@ spec:
         - name: SCRIPT
           value: >-
             oc delete all --selector app=store -n project01 ; oc delete all
-            --selector app=probes -n project01
+            --selector app=probes -n project01 ; oc delete all --selector
+            app=frontend -n project01
         - name: VERSION
           value: latest
       taskRef:
@@ -327,6 +350,22 @@ spec:
         name: buildah
       workspaces:
         - name: source
+          workspace: frontend
+    - name: check-image-streams
+      params:
+        - name: SCRIPT
+          value: oc get is
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-frontend
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: frontend
+        - name: kubeconfig-dir
           workspace: frontend
   workspaces:
     - name: default
