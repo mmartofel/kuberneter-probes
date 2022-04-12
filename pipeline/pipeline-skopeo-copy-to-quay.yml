@@ -1,0 +1,42 @@
+﻿apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: skopeo-copy-to-quay
+spec:
+  params:
+    - default: >-
+        docker://image-registry.openshift-image-registry.svc:5000/project01/probes
+      description: Image we would like to copy
+      name: image-to-copy
+      type: string
+    - default: main
+      description: TAG for the image we would like to copy over
+      name: image-tag
+      type: string
+    - default: 'docker://quay.io/mmartofe/probes'
+      description: Destination URL
+      name: destination-url
+      type: string
+    - default: main
+      description: TAG for destination image
+      name: destination-tag
+      type: string
+  tasks:
+    - name: skopeo-copy
+      params:
+        - name: srcImageURL
+          value: '$(params.image-to-copy):$(params.image-tag)'
+        - name: destImageURL
+          value: '$(params.destination-url):$(params.destination-tag)'
+        - name: srcTLSverify
+          value: 'true'
+        - name: destTLSverify
+          value: 'true'
+      taskRef:
+        kind: ClusterTask
+        name: skopeo-copy
+      workspaces:
+        - name: images-url
+          workspace: shared-volume
+  workspaces:
+    - name: shared-volume
