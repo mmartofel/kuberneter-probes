@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    app.openshift.io/vcs-uri: 'https://github.com/mmartofel/kuberneter-probes/tree/main/deployment/store'
   labels:
     app: store
     app.kubernetes.io/component: database

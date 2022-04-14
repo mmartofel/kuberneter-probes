@@ -2,6 +2,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   annotations:
+    app.openshift.io/vcs-uri: 'https://github.com/mmartofel/kuberneter-probes-frontend'
     app.openshift.io/connects-to: 'probes'
   name: frontend
   labels:
