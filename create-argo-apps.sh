@@ -1,3 +1,5 @@
+oc new-project probes
+
 oc delete AppProject no-kubernetes-probes -n openshift-gitops
 
 oc delete application store  -n openshift-gitops
