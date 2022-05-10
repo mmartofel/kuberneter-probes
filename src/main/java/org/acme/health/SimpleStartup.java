@@ -1,0 +1,18 @@
+package org.acme.health;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Startup;
+
+@Startup
+@ApplicationScoped
+public class SimpleStartup implements HealthCheck {
+
+    @Override
+    public HealthCheckResponse call() {
+        return HealthCheckResponse.up("Startup procedure");
+    }
+    
+}

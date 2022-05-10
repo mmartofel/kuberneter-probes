@@ -1,0 +1,59 @@
+package org.acme.health;
+
+import java.sql.SQLException;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
+import org.eclipse.microprofile.health.Readiness;
+
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.logging.Log;
+
+@Readiness
+@ApplicationScoped
+public class SimpleReadiness implements HealthCheck{
+
+@Inject
+AgroalDataSource defaultDataSource;
+
+    private boolean databaseUp;
+    private String databaseVendor;
+    private String databaseVersion;
+
+    @Override
+    public HealthCheckResponse call() {
+
+        HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Postgress database readiness check");
+        
+        try {
+            simulateDatabaseConnectionVerification();
+            databaseVendor = defaultDataSource.getConnection().getMetaData().getDatabaseProductName();
+            databaseVersion = defaultDataSource.getConnection().getMetaData().getDatabaseProductVersion();
+            responseBuilder.withData("database_vendor", databaseVendor);
+            responseBuilder.withData("database_version", databaseVersion);
+            responseBuilder.up();
+
+        } catch (SQLException e) {
+            responseBuilder.withData("error", e.toString());
+            responseBuilder.down();
+        }
+        return responseBuilder.build();
+    }
+
+    private void simulateDatabaseConnectionVerification() throws SQLException {
+
+        databaseUp = !defaultDataSource.getConnection().isClosed();
+
+        Log.info("Checking database connection status " + defaultDataSource.getConnection().getMetaData().getDatabaseProductName());
+        Log.info("Agroal datasource reachable: " + databaseUp);
+        
+        if (!databaseUp) {
+            throw new SQLException("Cannot contact database");
+        }
+    }
+
+}
