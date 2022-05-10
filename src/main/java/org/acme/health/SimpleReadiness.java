@@ -4,6 +4,7 @@ import java.sql.SQLException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.transaction.Transactional;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -15,6 +16,7 @@ import io.quarkus.logging.Log;
 
 @Readiness
 @ApplicationScoped
+@Transactional
 public class SimpleReadiness implements HealthCheck{
 
 @Inject
