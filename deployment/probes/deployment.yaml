@@ -42,7 +42,34 @@ spec:
               name: orm-configmap
           - configMapRef:
               name: flyway-configmap
-        image: image-registry.openshift-image-registry.svc:5000/project01/probes:main
+        startupProbe:
+            httpGet:
+              path: /q/health/started
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+        livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+        readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+        image: image-registry.openshift-image-registry.svc:5000/project01/probes:with-probes
         imagePullPolicy: Always
         name: probes
         ports:
