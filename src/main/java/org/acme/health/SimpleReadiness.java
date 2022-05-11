@@ -1,5 +1,6 @@
 package org.acme.health;
 
+import java.net.URL;
 import java.sql.SQLException;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -25,6 +26,7 @@ AgroalDataSource defaultDataSource;
     private boolean databaseUp;
     private String databaseVendor;
     private String databaseVersion;
+    private String databaseJDBCString;
 
     @Override
     public HealthCheckResponse call() {
@@ -35,10 +37,11 @@ AgroalDataSource defaultDataSource;
             simulateDatabaseConnectionVerification();
             databaseVendor = defaultDataSource.getConnection().getMetaData().getDatabaseProductName();
             databaseVersion = defaultDataSource.getConnection().getMetaData().getDatabaseProductVersion();
+            databaseJDBCString = defaultDataSource.getConnection().getMetaData().getURL();
             responseBuilder.withData("database_vendor", databaseVendor);
             responseBuilder.withData("database_version", databaseVersion);
+            responseBuilder.withData("database_url", databaseJDBCString);
             responseBuilder.up();
-
         } catch (SQLException e) {
             responseBuilder.withData("error", e.toString());
             responseBuilder.down();
@@ -50,8 +53,9 @@ AgroalDataSource defaultDataSource;
 
         databaseUp = !defaultDataSource.getConnection().isClosed();
 
-        Log.info("Checking database connection status " + defaultDataSource.getConnection().getMetaData().getDatabaseProductName());
+        Log.info("Checking database connection status for: " + defaultDataSource.getConnection().getMetaData().getDatabaseProductName());
         Log.info("Agroal datasource reachable: " + databaseUp);
+        Log.info("Autocommit: " + defaultDataSource.getConnection().getAutoCommit());
         
         if (!databaseUp) {
             throw new SQLException("Cannot contact database");
