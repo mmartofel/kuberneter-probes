@@ -1,6 +1,5 @@
 package org.acme.health;
 
-import java.net.URL;
 import java.sql.SQLException;
 
 import javax.enterprise.context.ApplicationScoped;
