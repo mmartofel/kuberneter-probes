@@ -4,6 +4,7 @@ oc delete AppProject no-kubernetes-probes -n openshift-gitops
 
 oc delete application store  -n openshift-gitops
 oc delete application probes -n openshift-gitops
+oc delete application frontend -n openshift-gitops
 
 oc adm policy add-cluster-role-to-user cluster-admin -z default -n probes
 oc adm policy add-cluster-role-to-user cluster-admin -z builder -n probes
