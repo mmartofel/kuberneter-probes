@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: rhacs-security-scan-pipeline
+  namespace: project01
+spec:
+  description: Red Hat Advanced Cluster Security scan pipeline
+  params:
+    - name: image
+      type: string
+      description: Full name of image to scan (example -- gcr.io/rox/sample:5.0-rc1)
+      default: 'quay.io/mmartofe/probes:main'
+  tasks:
+  - name: image-scan
+    taskRef:
+      name: rox-image-scan
+      kind: Task
+    params:
+    - name: image
+      value: $(params.image)
+    - name: rox_api_token
+      value: roxsecrets
+    - name: rox_central_endpoint
+      value: roxsecrets
+    - name: output_format
+      value: json
+  - name: image-check
+    taskRef:
+      name: rox-image-check
+      kind: Task
+    params:
+    - name: image
+      value: $(params.image)
+    - name: rox_api_token
+      value: roxsecrets
+    - name: rox_central_endpoint
+      value: roxsecrets

@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: security-scan
+spec:
+  params:
+    - default: quay.io/mmartofe/frontend
+      description: Image location
+      name: image-location
+      type: string
+    - default: main
+      description: Image TAG
+      name: image-tag
+      type: string
+    - default: all-layers
+      description: Scan scope
+      name: scope
+      type: string
+  tasks:
+    - name: grype
+      params:
+        - name: ARGS
+          value:
+            - '$(params.image-location):$(params.image-tag)'
+        - name: GRYPE_IMAGE
+          value: >-
+            docker.io/anchore/grype@sha256:40c41e43eff0eb979375ea705f0cf5f6f698941099f63c890c3eb90b6ef72db5
+      runAfter:
+        - trivy-scanner
+      taskRef:
+        kind: Task
+        name: grype
+    - name: trivy-scanner
+      params:
+        - name: ARGS
+          value:
+            - 'image'
+        - name: TRIVY_IMAGE
+          value: >-
+            docker.io/aquasec/trivy:0.42.1
+        - name: IMAGE_PATH
+          value: '$(params.image-location):$(params.image-tag)'
+        - name: AIR_GAPPED_ENABLED
+          value: 'false'
+      taskRef:
+        kind: Task
+        name: trivy-scanner
+      workspaces:
+        - name: manifest-dir
+          workspace: trivy-manifest
+  workspaces:
+    - name: trivy-manifest

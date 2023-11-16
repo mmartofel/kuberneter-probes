@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: quarkus-api-build-pipeline-z-reki
+spec:
+  params:
+    - name: api-git-url
+      value: 'https://github.com/mmartofel/kuberneter-probes'
+    - name: api-git-branch
+      value: main
+    - name: api-image-destination
+      value: 'image-registry.openshift-image-registry.svc:5000/project01/probes'
+    - name: frontend-git-url
+      value: 'https://github.com/mmartofel/kuberneter-probes-frontend'
+    - name: frontend-git-branch
+      value: main
+    - name: frontend-image-destination
+      value: 'image-registry.openshift-image-registry.svc:5000/project01/frontend'
+  pipelineRef:
+    name: quarkus-api-build-pipeline
+  podTemplate:
+    securityContext:
+      fsGroup: 65532
+  serviceAccountName: pipeline
+  workspaces:
+    - name: default
+      persistentVolumeClaim:
+        claimName: microservice-pvc
+    - name: frontend
+      persistentVolumeClaim:
+        claimName: frontend-pvc

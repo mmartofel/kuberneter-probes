@@ -1,0 +1,11 @@
+
+
+oc edit crd resolutionrequests.resolution.tekton.dev
+
+Remove, from under the categories: section:
+
+ -all
+
+https://access.redhat.com/solutions/6975952
+
+

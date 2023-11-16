@@ -1,0 +1,341 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: quarkus-api-build-pipeline
+  namespace: project01
+spec:
+  finally:
+    - name: deploy-probes-api
+      params:
+        - name: SCRIPT
+          value: >-
+            oc new-app $(params.api-image-destination):$(params.api-git-branch)
+            ; oc set env deployment/probes --from configmap/flyway-configmap ;
+            oc set env deployment/probes --from configmap/orm-configmap ; oc set
+            env deployment/probes --from configmap/postgres-configmap ; oc
+            expose service/probes ; oc label deployment/probes
+            app.kubernetes.io/part-of=QUARKUS_API --overwrite ; oc label
+            deployment/probes app.openshift.io/runtime=quarkus --overwrite
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: deploy-frontend
+      params:
+        - name: SCRIPT
+          value: >-
+            oc new-app
+            $(params.frontend-image-destination):$(params.frontend-git-branch) ;
+            oc expose svc/frontend ; oc label deployment/frontend
+            app.openshift.io/runtime=angularjs --overwrite ; oc label
+            deployment/frontend app.kubernetes.io/part-of=ANGULAR_DEMO_APP
+            --overwrite
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: frontend
+        - name: kubeconfig-dir
+          workspace: frontend
+  params:
+    - default: 'https://github.com/mmartofel/kuberneter-probes'
+      description: Git repo to clone code from to build API
+      name: api-git-url
+      type: string
+    - default: main
+      description: Git branch to build API from
+      name: api-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/probes'
+      description: Destination for API image to store
+      name: api-image-destination
+      type: string
+    - default: 'https://github.com/mmartofel/kuberneter-probes-frontend'
+      description: Git repo to clone code from to build Frontend
+      name: frontend-git-url
+      type: string
+    - default: main
+      description: Git branch to build Frontend from
+      name: frontend-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/frontend'
+      description: Destination for Frontend image to store
+      name: frontend-image-destination
+      type: string
+  tasks:
+    - name: git-clone-api
+      params:
+        - name: url
+          value: $(params.api-git-url)
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:v1.9.0-83
+        - name: userHome
+          value: /tekton/home
+        - name: revision
+          value: $(params.api-git-branch)
+      runAfter:
+        - cleanup
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: default
+    - name: maven-build-skiptests
+      params:
+        - name: MAVEN_IMAGE
+          value: gcr.io/cloud-builders/mvn
+        - name: GOALS
+          value:
+            - package
+            - '-D=skipTests'
+        - name: PROXY_PROTOCOL
+          value: http
+        - name: CONTEXT_DIR
+          value: .
+        - name: MAVEN_MIRROR_URL
+          value: ''
+      runAfter:
+        - git-clone-api
+      taskRef:
+        kind: ClusterTask
+        name: maven
+      workspaces:
+        - name: source
+          workspace: default
+        - name: maven-settings
+          workspace: maven-settings
+    - name: buildah-api
+      params:
+        - name: IMAGE
+          value: '$(params.api-image-destination):$(params.api-git-branch)'
+        - name: BUILDER_IMAGE
+          value: 'registry.access.redhat.com/ubi8/buildah:8.7-7'
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./src/main/docker/Dockerfile.jvm.ocp
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'false'
+        - name: FORMAT
+          value: oci
+      runAfter:
+        - maven-build-skiptests
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: default
+    - name: deployment-postgres
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/store/deployment.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - configmap-postgres-setup
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-postgres-setup
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/manifest-dir/deployment/store/configmap.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - git-clone-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: service-postgres
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig-dir/deployment/store/service.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - configmap-postgres-setup
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-postgres
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-postgress.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-flyway
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-flyway.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: configmap-orm
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f
+            /workspace/kubeconfig-dir/deployment/probes/configmap-orm.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-api
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: default
+        - name: kubeconfig-dir
+          workspace: default
+    - name: cleanup
+      params:
+        - name: SCRIPT
+          value: >-
+            oc delete all --selector app=store -n project01 ; oc delete all
+            --selector app=probes -n project01 ; oc delete all --selector
+            app=frontend -n project01
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: git-clone-frontend
+      params:
+        - name: url
+          value: $(params.frontend-git-url)
+        - name: revision
+          value: $(params.frontend-git-branch)
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:v1.9.0-83
+        - name: userHome
+          value: /tekton/home
+      runAfter:
+        - cleanup
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: frontend
+    - name: buildah-frontend
+      params:
+        - name: IMAGE
+          value: '$(params.frontend-image-destination):$(params.frontend-git-branch)'
+        - name: BUILDER_IMAGE
+          value: 'registry.access.redhat.com/ubi8/buildah:8.7-7'
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'false'
+        - name: FORMAT
+          value: oci
+      runAfter:
+        - git-clone-frontend
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: frontend
+    - name: check-image-streams
+      params:
+        - name: SCRIPT
+          value: oc get is
+        - name: VERSION
+          value: latest
+      runAfter:
+        - buildah-frontend
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: frontend
+        - name: kubeconfig-dir
+          workspace: frontend
+  workspaces:
+    - name: default
+    - name: frontend
+    - name: maven-settings
+
