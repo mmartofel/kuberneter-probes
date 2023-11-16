@@ -2,6 +2,7 @@
 
 pipeline/13372670-node-pull-secret.yaml
 pipeline/mmartofe-wally-secret.yaml
+pipeline/mmartofe-puller-secret.yaml
 pipeline/sa.sh
 pipeline/secret.yaml
 
