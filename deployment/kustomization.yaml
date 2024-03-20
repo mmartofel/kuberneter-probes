@@ -5,3 +5,9 @@ resources:
 - ./front/deployment.yaml
 - ./front/service.yaml
 - ./front/route.yaml
+- ./probes/configmap-postgress.yaml
+- ./probes/configmap-orm.yaml
+- ./probes/configmap-flyway.yaml
+- ./probes/deployment.yaml
+- ./probes/service.yaml
+- ./probes/route.yaml
