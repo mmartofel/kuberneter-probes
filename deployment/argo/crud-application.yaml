@@ -4,7 +4,7 @@ metadata:
   name: crud-application
 spec:
   destination:
-    name: 'CRUD microservice with database and frontend'
+    name: ''
     namespace: crud-application
     server: 'https://kubernetes.default.svc'
   source:
