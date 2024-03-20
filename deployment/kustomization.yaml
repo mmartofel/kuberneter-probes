@@ -1,4 +1,7 @@
 resources:
+- ./store/configmap.yaml
+- ./store/deployment.yaml
+- ./store/service.yaml
 - ./front/deployment.yaml
 - ./front/service.yaml
 - ./front/route.yaml
