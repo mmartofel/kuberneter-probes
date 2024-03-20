@@ -1,4 +1,0 @@
-resources:
-- ./front/deployment.yaml
-- ./front/service.yaml
-- ./front/route.yaml
