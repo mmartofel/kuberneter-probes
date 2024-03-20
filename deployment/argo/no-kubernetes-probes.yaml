@@ -12,6 +12,9 @@ spec:
     - name: '*'
       namespace: probes
       server: '*'
+    - name: '*'
+      namespace: crud-application
+      server: '*'
   sourceRepos:
     - '*'
 status: {}
