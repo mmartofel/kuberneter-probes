@@ -257,9 +257,9 @@ spec:
       params:
         - name: SCRIPT
           value: >-
-            oc delete all --selector app=store -n project01 ; oc delete all
-            --selector app=probes -n project01 ; oc delete all --selector
-            app=frontend -n project01
+            oc delete all --selector app=store -n project01 2>/dev/null ; oc delete all
+            --selector app=probes -n project01 2>/dev/null ; oc delete all --selector
+            app=frontend -n project01 2>/dev/null
         - name: VERSION
           value: latest
       taskRef:

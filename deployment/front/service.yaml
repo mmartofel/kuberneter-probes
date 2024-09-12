@@ -17,5 +17,3 @@ spec:
   sessionAffinity: None
   selector:
     deployment: frontend
-status:
-  loadBalancer: {}

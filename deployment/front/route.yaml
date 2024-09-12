@@ -16,5 +16,5 @@ spec:
     targetPort: 4200-tcp
   wildcardPolicy: None
   tls:
-    termination: edge   
+    termination: edge
     insecureEdgeTerminationPolicy: Redirect
