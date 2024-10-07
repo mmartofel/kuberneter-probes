@@ -24,10 +24,10 @@ oc apply -f ./stackrox_pipeline/rox-pipeline.yml
 oc apply -f ./nexus/maven-settings.yaml
 oc apply -f ./nexus/nexus-template.yaml
 
-oc adm policy add-cluster-role-to-user cluster-admin -z default -n project01
-oc adm policy add-cluster-role-to-user cluster-admin -z builder -n project01
-oc adm policy add-cluster-role-to-user cluster-admin -z deployer -n project01
-oc adm policy add-cluster-role-to-user cluster-admin -z pipeline -n project01
+# oc adm policy add-cluster-role-to-user cluster-admin -z default -n project01
+# oc adm policy add-cluster-role-to-user cluster-admin -z builder -n project01
+# oc adm policy add-cluster-role-to-user cluster-admin -z deployer -n project01
+# oc adm policy add-cluster-role-to-user cluster-admin -z pipeline -n project01
 
 # ./patch.sh
 
