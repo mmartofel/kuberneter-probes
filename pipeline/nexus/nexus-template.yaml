@@ -1,11 +1,11 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    openshift.io/cluster-monitoring: "true"
-    argocd.argoproj.io/managed-by: "openshift-gitops"
-  name: project01
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   labels:
+#     openshift.io/cluster-monitoring: "true"
+#     argocd.argoproj.io/managed-by: "openshift-gitops"
+#   name: project01
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -73,7 +73,7 @@ spec:
       volumes:
       - name: nexus-data
         persistentVolumeClaim:
-          claimName: nexus-pv
+          claimName: nexus-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -115,15 +115,14 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: nexus-pvc
+  namespace: project01
   labels:
     app: nexus
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-  name: nexus-pv
-  namespace: project01
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
+  volumeMode: Filesystem
   resources:
     requests:
       storage: 5Gi
