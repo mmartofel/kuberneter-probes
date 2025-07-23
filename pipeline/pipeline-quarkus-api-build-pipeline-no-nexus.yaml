@@ -1,4 +1,4 @@
-﻿apiVersion: tekton.dev/v1beta1
+﻿apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: quarkus-api-build-pipeline-no-nexus
@@ -21,6 +21,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -41,6 +42,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: frontend
@@ -98,6 +100,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: git-clone
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: output
           workspace: default
@@ -118,6 +121,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: maven
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: source
           workspace: default
@@ -145,6 +149,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: buildah
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: source
           workspace: default
@@ -161,6 +166,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -177,6 +183,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -193,6 +200,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -211,6 +219,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -229,6 +238,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -247,6 +257,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: default
@@ -264,6 +275,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
     - name: git-clone-frontend
       params:
         - name: url
@@ -290,6 +302,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: git-clone
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: output
           workspace: frontend
@@ -315,6 +328,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: buildah
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: source
           workspace: frontend
@@ -329,6 +343,7 @@ spec:
       taskRef:
         kind: ClusterTask
         name: openshift-client
+        apiVersion: tekton.dev/v1
       workspaces:
         - name: manifest-dir
           workspace: frontend

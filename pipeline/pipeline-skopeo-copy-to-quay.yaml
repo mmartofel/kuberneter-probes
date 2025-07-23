@@ -1,11 +1,10 @@
-﻿apiVersion: tekton.dev/v1beta1
+﻿apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: skopeo-copy-to-quay
 spec:
   params:
-    - default: >-
-        docker://image-registry.openshift-image-registry.svc:5000/project01/probes
+    - default: 'docker://image-registry.openshift-image-registry.svc:5000/project01/probes'
       description: Image we would like to copy
       name: image-to-copy
       type: string
@@ -32,8 +31,10 @@ spec:
           value: 'true'
         - name: destTLSverify
           value: 'true'
+        - name: multiArch
+          value: system
       taskRef:
-        kind: ClusterTask
+        kind: Task
         name: skopeo-copy
       workspaces:
         - name: images-url

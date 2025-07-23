@@ -1,0 +1,342 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: quarkus-application-pipeline
+  namespace: project01
+spec:
+  finally:
+    - name: deploy-frontend
+      params:
+        - name: SCRIPT
+          value: 'oc new-app --image=$(params.frontend-image-destination):$(params.frontend-git-branch) ; oc expose svc/frontend ; oc label deployment/frontend app.openshift.io/runtime=angularjs --overwrite ; oc label deployment/frontend app.kubernetes.io/part-of=ANGULAR_DEMO_APP --overwrite'
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: Task
+        name: openshift-client
+    - name: deploy-api
+      params:
+        - name: SCRIPT
+          value: 'oc new-app --image=$(params.api-image-destination):$(params.api-git-branch) ; oc set env deployment/probes --from configmap/flyway-configmap ; oc set env deployment/probes --from configmap/orm-configmap ; oc set env deployment/probes --from configmap/postgres-configmap ; oc expose service/probes ; oc label deployment/probes app.kubernetes.io/part-of=QUARKUS_API --overwrite ; oc label deployment/probes app.openshift.io/runtime=quarkus --overwrite'
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: Task
+        name: openshift-client
+  params:
+    - default: 'https://github.com/mmartofel/kuberneter-probes'
+      name: api-git-url
+      type: string
+    - default: main
+      name: api-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/probes'
+      name: api-image-destination
+      type: string
+    - default: 'https://github.com/mmartofel/kuberneter-probes-frontend'
+      name: frontend-git-url
+      type: string
+    - default: main
+      name: frontend-git-branch
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/project01/frontend'
+      name: frontend-image-destination
+      type: string
+  tasks:
+    - name: api-git-clone
+      params:
+        - name: url
+          value: $(params.api-git-url)
+        - name: revision
+          value: $(params.api-git-branch)
+        - name: refspec
+          value: ''
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: subdirectory
+          value: ''
+        - name: sparseCheckoutDirectories
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+        - name: httpProxy
+          value: ''
+        - name: httpsProxy
+          value: ''
+        - name: noProxy
+          value: ''
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: 'ghcr.io/tektoncd-catalog/git-clone:v1.1.0'
+        - name: userHome
+          value: /home/git
+      runAfter:
+        - cleanup
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: api-pvc
+    - name: api-maven-build
+      params:
+        - name: MAVEN_IMAGE
+          value: 'gcr.io/cloud-builders/mvn@sha256:57523fc43394d6d9d2414ee8d1c85ed7a13460cbb268c3cd16d28cfb3859e641'
+        - name: GOALS
+          value:
+            - package
+            - '-D=skipTests'
+        - name: MAVEN_MIRROR_URL
+          value: ''
+        - name: SERVER_USER
+          value: ''
+        - name: SERVER_PASSWORD
+          value: ''
+        - name: PROXY_USER
+          value: ''
+        - name: PROXY_PASSWORD
+          value: ''
+        - name: PROXY_PORT
+          value: ''
+        - name: PROXY_HOST
+          value: ''
+        - name: PROXY_NON_PROXY_HOSTS
+          value: ''
+        - name: PROXY_PROTOCOL
+          value: http
+        - name: CONTEXT_DIR
+          value: .
+      runAfter:
+        - api-git-clone
+      taskRef:
+        kind: Task
+        name: maven
+      workspaces:
+        - name: source
+          workspace: api-pvc
+        - name: maven-settings
+          workspace: api-pvc
+    - name: api-buildah
+      params:
+        - name: IMAGE
+          value: '$(params.api-image-destination):$(params.api-git-branch)'
+        - name: DOCKERFILE
+          value: ./src/main/docker/Dockerfile.jvm.ocp
+        - name: BUILD_ARGS
+          value: []
+        - name: CONTEXT
+          value: .
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: TLS_VERIFY
+          value: 'true'
+        - name: VERBOSE
+          value: 'false'
+      runAfter:
+        - api-maven-build
+      taskRef:
+        kind: Task
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: api-pvc
+    - name: cleanup
+      params:
+        - name: SCRIPT
+          value: oc delete all --selector app=store -n project01 ; oc delete all --selector app=probes -n project01 ; oc delete all --selector app=frontend -n project01
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: Task
+        name: openshift-client
+    - name: frontend-git-clone
+      params:
+        - name: url
+          value: $(params.frontend-git-url)
+        - name: revision
+          value: $(params.frontend-git-branch)
+        - name: refspec
+          value: ''
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: subdirectory
+          value: ''
+        - name: sparseCheckoutDirectories
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+        - name: httpProxy
+          value: ''
+        - name: httpsProxy
+          value: ''
+        - name: noProxy
+          value: ''
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: 'ghcr.io/tektoncd-catalog/git-clone:v1.1.0'
+        - name: userHome
+          value: /home/git
+      runAfter:
+        - cleanup
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: frontend-pvc
+    - name: frontend-buildah
+      params:
+        - name: IMAGE
+          value: '$(params.frontend-image-destination):$(params.frontend-git-branch)'
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: BUILD_ARGS
+          value: []
+        - name: CONTEXT
+          value: .
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+        - name: TLS_VERIFY
+          value: 'true'
+        - name: VERBOSE
+          value: 'false'
+      runAfter:
+        - frontend-git-clone
+      taskRef:
+        kind: Task
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: frontend-pvc
+    - name: configmap-postgres-setup
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/manifest_dir/deployment/store/configmap.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - api-git-clone
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+    - name: service-postgres
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig_dir/deployment/store/service.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - configmap-postgres-setup
+        - configmap-postgres
+        - configmap-flyway
+        - configmap-orm
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+    - name: configmap-postgres
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig_dir/deployment/probes/configmap-postgress.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - api-git-clone
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+    - name: configmap-flyway
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig_dir/deployment/probes/configmap-flyway.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - api-git-clone
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+    - name: configmap-orm
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig_dir/deployment/probes/configmap-orm.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - api-git-clone
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+    - name: deployment-postgres
+      params:
+        - name: SCRIPT
+          value: oc apply -f /workspace/kubeconfig_dir/deployment/store/deployment.yaml
+        - name: VERSION
+          value: latest
+      runAfter:
+        - service-postgres
+      taskRef:
+        kind: Task
+        name: openshift-client
+      workspaces:
+        - name: manifest_dir
+          workspace: api-pvc
+        - name: kubeconfig_dir
+          workspace: api-pvc
+  workspaces:
+    - name: api-pvc
+    - name: frontend-pvc

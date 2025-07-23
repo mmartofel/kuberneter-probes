@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   annotations:
@@ -22,7 +22,7 @@ spec:
       name: ARGS
       type: array
     - default: >-
-        docker.io/anchore/grype@sha256:40c41e43eff0eb979375ea705f0cf5f6f698941099f63c890c3eb90b6ef72db5
+        docker.io/anchore/grype@sha256:84ec572a9d39e6c4774cbaf5678e73c772d394651c6cdee1c21f74203ff68685
       description: Grype image to be used
       name: GRYPE_IMAGE
       type: string
